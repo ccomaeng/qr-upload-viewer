@@ -54,7 +54,7 @@ NODE_ENV=production
 FRONTEND_URL=https://qr-upload-viewer.vercel.app
 CORS_ORIGIN=https://qr-upload-viewer.vercel.app
 DATABASE_URL=./data/qr_viewer.db
-MAX_FILE_SIZE=10485760
+MAX_FILE_SIZE=20971520
 ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp
 ```
 

@@ -13,7 +13,7 @@ services:
       - PORT=3001
       - FRONTEND_URL=http://localhost:3000
       - DATABASE_PATH=/app/data/qr_viewer.db
-      - MAX_FILE_SIZE=10485760
+      - MAX_FILE_SIZE=20971520
       - UPLOAD_DIR=/app/uploads
     volumes:
       - ./backend/data:/app/data

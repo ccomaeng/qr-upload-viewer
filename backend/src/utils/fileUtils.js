@@ -138,7 +138,7 @@ async function validateImageConstraints(filePath) {
     const constraints = {
       maxWidth: 8000,
       maxHeight: 8000,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 20 * 1024 * 1024, // 20MB
       minWidth: 50,
       minHeight: 50
     };

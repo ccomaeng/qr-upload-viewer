@@ -21,7 +21,7 @@ function errorHandler(err, req, res, next) {
   // Multer errors (file upload)
   if (err.code === 'LIMIT_FILE_SIZE') {
     statusCode = 413;
-    message = 'File too large. Maximum size is 10MB.';
+    message = 'File too large. Maximum size is 20MB.';
     code = 'FILE_TOO_LARGE';
   } else if (err.code === 'LIMIT_FILE_COUNT') {
     statusCode = 400;
