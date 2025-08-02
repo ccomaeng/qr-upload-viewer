@@ -24,6 +24,7 @@
     "qrcode-reader": "^1.0.4",
     "sharp": "^0.32.6",
     "sqlite3": "^5.1.6",
+    "pg": "^8.11.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

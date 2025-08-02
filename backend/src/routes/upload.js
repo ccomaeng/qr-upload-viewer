@@ -91,7 +91,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     uploadId = uuidv4();
     await runQuery(`
       INSERT INTO uploads (id, filename, original_name, file_size, mime_type, processing_status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `, [
       uploadId,
       req.file.filename,
@@ -121,15 +121,15 @@ router.post('/upload', upload.single('image'), async (req, res) => {
         for (const qr of qrResults) {
           await runQuery(`
             INSERT INTO qr_results (upload_id, content, position_x, position_y, confidence)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5)
           `, [uploadId, qr.content, qr.location?.topLeftCorner?.x || 0, qr.location?.topLeftCorner?.y || 0, qr.confidence || 1.0]);
         }
 
         // Update upload status
         await runQuery(`
           UPDATE uploads 
-          SET processing_status = ?, processing_time = ?
-          WHERE id = ?
+          SET processing_status = $1, processing_time = $2
+          WHERE id = $3
         `, ['completed', processingTime, uploadId]);
 
         console.log(`✅ Processed ${qrResults.length} QR codes for upload ${uploadId} in ${processingTime}ms`);
@@ -139,8 +139,8 @@ router.post('/upload', upload.single('image'), async (req, res) => {
         // Update upload status with error
         await runQuery(`
           UPDATE uploads 
-          SET processing_status = ?, error_message = ?
-          WHERE id = ?
+          SET processing_status = $1, error_message = $2
+          WHERE id = $3
         `, ['failed', error.message, uploadId]);
       }
     });
@@ -157,8 +157,8 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     if (uploadId) {
       await runQuery(`
         UPDATE uploads 
-        SET processing_status = ?, error_message = ?
-        WHERE id = ?
+        SET processing_status = $1, error_message = $2
+        WHERE id = $3
       `, ['failed', error.message, uploadId]).catch(() => {});
     }
 
@@ -188,7 +188,7 @@ router.get('/results/:uploadId', async (req, res) => {
     const upload = await getQuery(`
       SELECT id, original_name, processing_status, processing_time, error_message, upload_time
       FROM uploads 
-      WHERE id = ?
+      WHERE id = $1
     `, [uploadId]);
 
     if (!upload) {
@@ -203,7 +203,7 @@ router.get('/results/:uploadId', async (req, res) => {
     const qrResults = await allQuery(`
       SELECT content, position_x, position_y, confidence, created_at
       FROM qr_results 
-      WHERE upload_id = ?
+      WHERE upload_id = $1
       ORDER BY created_at ASC
     `, [uploadId]);
 
@@ -244,7 +244,7 @@ router.get('/uploads/:uploadId', async (req, res) => {
     const upload = await getQuery(`
       SELECT id, filename, original_name, file_size, mime_type, upload_time, processing_status, processing_time, error_message
       FROM uploads 
-      WHERE id = ?
+      WHERE id = $1
     `, [uploadId]);
 
     if (!upload) {
@@ -299,7 +299,7 @@ router.get('/uploads', async (req, res) => {
       LEFT JOIN qr_results qr ON u.id = qr.upload_id
       GROUP BY u.id
       ORDER BY u.upload_time DESC
-      LIMIT ? OFFSET ?
+      LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
     const totalUploads = await getQuery('SELECT COUNT(*) as count FROM uploads');
@@ -340,7 +340,7 @@ router.delete('/uploads/:uploadId', async (req, res) => {
 
     // Get upload info first
     const upload = await getQuery(`
-      SELECT filename FROM uploads WHERE id = ?
+      SELECT filename FROM uploads WHERE id = $1
     `, [uploadId]);
 
     if (!upload) {
@@ -358,7 +358,7 @@ router.delete('/uploads/:uploadId', async (req, res) => {
     });
 
     // Delete from database (CASCADE will handle qr_results)
-    await runQuery('DELETE FROM uploads WHERE id = ?', [uploadId]);
+    await runQuery('DELETE FROM uploads WHERE id = $1', [uploadId]);
 
     res.json({
       success: true,
@@ -393,7 +393,7 @@ router.post('/generate-qr/:uploadId', async (req, res) => {
     const upload = await getQuery(`
       SELECT id, filename, original_name, upload_time, qr_generated, generated_qr_path
       FROM uploads 
-      WHERE id = ?
+      WHERE id = $1
     `, [uploadId]);
     
     if (!upload) {
@@ -435,8 +435,8 @@ router.post('/generate-qr/:uploadId', async (req, res) => {
     // Update database with QR info
     await runQuery(`
       UPDATE uploads 
-      SET qr_generated = TRUE, generated_qr_path = ?, qr_generated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+      SET qr_generated = TRUE, generated_qr_path = $1, qr_generated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
     `, [qrResult.qrImagePath, uploadId]);
     
     res.json({
@@ -468,7 +468,7 @@ router.get('/qr/:uploadId', async (req, res) => {
     const upload = await getQuery(`
       SELECT id, filename, original_name, upload_time, qr_generated, generated_qr_path, qr_generated_at
       FROM uploads 
-      WHERE id = ?
+      WHERE id = $1
     `, [uploadId]);
     
     if (!upload) {
