@@ -95,14 +95,30 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+// Enhanced health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const { performHealthCheck, quickHealthCheck } = require('./utils/healthCheck');
+    
+    // Use quick check for frequent monitoring, full check for detailed diagnostics
+    const useQuickCheck = req.query.quick === 'true';
+    const healthStatus = useQuickCheck ? 
+      await quickHealthCheck() : 
+      await performHealthCheck();
+    
+    const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
+    res.status(statusCode).json(healthStatus);
+    
+  } catch (error) {
+    console.error('❌ Health check endpoint error:', error);
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed',
+      uptime: Math.floor(process.uptime()),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  }
 });
 
 // API routes
@@ -112,38 +128,100 @@ app.use('/api', uploadRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Initialize database and start server
+// Initialize database and start server with enhanced error handling
 async function startServer() {
-  try {
-    await initDatabase();
-    console.log('✅ Database initialized successfully');
-    
-    // Apply database migrations
-    const { applyMigrations } = require('./database/migrations');
-    await applyMigrations();
-    
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 QR Upload Viewer API running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+  let retryCount = 0;
+  const maxRetries = 3;
+  
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`🔄 Starting server (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      // Test database connection first
+      const { testDatabaseConnection } = require('./utils/healthCheck');
+      await testDatabaseConnection(3);
+      
+      // Initialize database schema
+      await initDatabase();
+      console.log('✅ Database initialized successfully');
+      
+      // Apply database migrations if they exist
+      try {
+        const { applyMigrations } = require('./database/migrations');
+        await applyMigrations();
+        console.log('✅ Database migrations applied');
+      } catch (migrationError) {
+        console.warn('⚠️ Migration file not found or failed, continuing...');
+      }
+      
+      // Start HTTP server
+      const server = app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 QR Upload Viewer API running on port ${PORT}`);
+        console.log(`📊 Health check: http://localhost:${PORT}/health`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🗄️ Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+      });
+
+      // Handle server errors
+      server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+          console.error(`❌ Port ${PORT} is already in use`);
+          process.exit(1);
+        } else {
+          console.error('❌ Server error:', error);
+        }
+      });
+
+      // Graceful shutdown handlers
+      const gracefulShutdown = async () => {
+        console.log('🛑 Received shutdown signal, shutting down gracefully...');
+        
+        server.close(async () => {
+          console.log('✅ HTTP server closed');
+          
+          // Close database connections
+          try {
+            const { closeDatabase } = require('./database/init');
+            await closeDatabase();
+            console.log('✅ Database connections closed');
+          } catch (error) {
+            console.error('❌ Error closing database:', error);
+          }
+          
+          process.exit(0);
+        });
+
+        // Force close after timeout
+        setTimeout(() => {
+          console.error('❌ Could not close connections in time, forcefully shutting down');
+          process.exit(1);
+        }, 10000);
+      };
+
+      process.on('SIGTERM', gracefulShutdown);
+      process.on('SIGINT', gracefulShutdown);
+      
+      // Success - break out of retry loop
+      break;
+      
+    } catch (error) {
+      retryCount++;
+      console.error(`❌ Server startup attempt ${retryCount} failed:`, error.message);
+      
+      if (retryCount >= maxRetries) {
+        console.error('❌ Max retries reached, server startup failed');
+        process.exit(1);
+      }
+      
+      // Wait before retry
+      const waitTime = Math.pow(2, retryCount - 1) * 2000; // 2s, 4s, 8s
+      console.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 Received SIGTERM, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('🛑 Received SIGINT, shutting down gracefully');
-  process.exit(0);
-});
-
+// Start the server
 startServer();
 
 module.exports = app;
