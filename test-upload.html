@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Test</title>
+</head>
+<body>
+    <h1>업로드 테스트</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <button onclick="uploadFile()">업로드</button>
+    <div id="result"></div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            console.log('선택된 파일:', file.name, file.type, file.size);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                console.log('업로드 시작...');
+                const response = await fetch('http://localhost:3001/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    // Content-Type을 설정하지 않음 (브라우저가 자동으로 boundary 설정)
+                });
+                
+                console.log('응답 상태:', response.status);
+                const data = await response.json();
+                console.log('응답 데이터:', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>결과:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('업로드 오류:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>오류:</h3>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

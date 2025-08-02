@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View 페이지 디버그 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #007AFF;
+            border-radius: 8px;
+        }
+        img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .clear-btn {
+            background: #dc3545;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 View 페이지 디버그 테스트</h1>
+        <p><strong>API 서버:</strong> <span id="api-url">http://192.168.25.54:3001</span></p>
+        <p><strong>현재 시간:</strong> <span id="current-time"></span></p>
+        
+        <div class="input-group">
+            <label>Upload ID 입력:</label>
+            <input type="text" id="uploadId" value="98711f00-6633-4e07-8d80-d601a98057fa" placeholder="Upload ID 입력">
+        </div>
+
+        <button onclick="testViewPage()">View 페이지 테스트</button>
+        <button onclick="testUploadAPI()">Upload API 테스트</button>
+        <button onclick="testImageLoad()">이미지 로드 테스트</button>
+
+        <div id="status-area"></div>
+
+        <div class="image-container" id="image-container">
+            <p>이미지가 여기에 표시됩니다</p>
+        </div>
+
+        <div class="log">
+            <button class="clear-btn" onclick="clearLog()">Clear</button>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://192.168.25.54:3001';
+        
+        // 현재 시간 업데이트
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleString('ko-KR');
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 로그 함수
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logContent = document.getElementById('log-content');
+            const logLine = document.createElement('div');
+            
+            const typeIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            };
+            
+            logLine.innerHTML = `<span style="color: #888">[${timestamp}]</span> ${typeIcon[type] || 'ℹ️'} ${message}`;
+            logContent.appendChild(logLine);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-content').innerHTML = '';
+        }
+
+        function showStatus(message, type) {
+            const statusArea = document.getElementById('status-area');
+            statusArea.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        // View 페이지 시뮬레이션
+        async function testViewPage() {
+            const uploadId = document.getElementById('uploadId').value;
+            if (!uploadId) {
+                log('Upload ID를 입력해주세요', 'error');
+                return;
+            }
+
+            log(`View 페이지 테스트 시작: ${uploadId}`, 'info');
+            showStatus('🔄 View 페이지 데이터 로드 중...', 'info');
+            
+            try {
+                // Step 1: Upload API 호출
+                log(`Step 1: GET ${API_BASE_URL}/api/uploads/${uploadId}`, 'info');
+                
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/uploads/${uploadId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                log(`Upload API 응답: ${uploadResponse.status} ${uploadResponse.statusText}`, 'info');
+                
+                if (!uploadResponse.ok) {
+                    throw new Error(`Upload API 실패: HTTP ${uploadResponse.status}`);
+                }
+                
+                const uploadData = await uploadResponse.json();
+                log(`Upload 데이터: ${JSON.stringify(uploadData, null, 2)}`, 'success');
+                
+                // Step 2: Results API 호출
+                log(`Step 2: GET ${API_BASE_URL}/api/results/${uploadId}`, 'info');
+                
+                const resultsResponse = await fetch(`${API_BASE_URL}/api/results/${uploadId}`);
+                let qrCodes = [];
+                
+                if (resultsResponse.ok) {
+                    const resultsData = await resultsResponse.json();
+                    qrCodes = resultsData.qrCodes || [];
+                    log(`Results 데이터: ${JSON.stringify(resultsData, null, 2)}`, 'success');
+                } else {
+                    log(`Results API 경고: ${resultsResponse.status}`, 'warning');
+                }
+                
+                // Step 3: 이미지 정보 표시
+                const imageInfo = {
+                    ...uploadData.upload,
+                    qrCodes
+                };
+                
+                log(`최종 이미지 데이터: ${JSON.stringify(imageInfo, null, 2)}`, 'success');
+                showStatus('✅ View 페이지 데이터 로드 성공', 'success');
+                
+                // 이미지 표시
+                displayImageInfo(imageInfo);
+                
+            } catch (error) {
+                log(`View 페이지 테스트 실패: ${error.message}`, 'error');
+                showStatus('❌ View 페이지 데이터 로드 실패', 'error');
+            }
+        }
+
+        // Upload API 직접 테스트
+        async function testUploadAPI() {
+            const uploadId = document.getElementById('uploadId').value;
+            if (!uploadId) {
+                log('Upload ID를 입력해주세요', 'error');
+                return;
+            }
+
+            log(`Upload API 직접 테스트: ${uploadId}`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/uploads/${uploadId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`Upload API 성공: ${JSON.stringify(data, null, 2)}`, 'success');
+                    showStatus('✅ Upload API 호출 성공', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                log(`Upload API 실패: ${error.message}`, 'error');
+                showStatus('❌ Upload API 호출 실패', 'error');
+            }
+        }
+
+        // 이미지 로드 테스트
+        async function testImageLoad() {
+            const uploadId = document.getElementById('uploadId').value;
+            if (!uploadId) {
+                log('Upload ID를 입력해주세요', 'error');
+                return;
+            }
+
+            log(`이미지 로드 테스트: ${uploadId}`, 'info');
+            
+            try {
+                // 먼저 Upload API로 파일명 확인
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/uploads/${uploadId}`);
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload 정보 조회 실패');
+                }
+                
+                const uploadData = await uploadResponse.json();
+                const filename = uploadData.upload.filename;
+                const imageUrl = `${API_BASE_URL}/uploads/${filename}`;
+                
+                log(`이미지 URL: ${imageUrl}`, 'info');
+                
+                // 이미지 로드 테스트
+                const img = new Image();
+                
+                img.onload = function() {
+                    log(`이미지 로드 성공: ${this.width}x${this.height}`, 'success');
+                    showStatus('✅ 이미지 로드 성공', 'success');
+                    
+                    // 실제 이미지 표시
+                    const container = document.getElementById('image-container');
+                    container.innerHTML = `
+                        <img src="${imageUrl}" alt="업로드된 이미지">
+                        <p>파일명: ${filename}</p>
+                        <p>크기: ${this.width}x${this.height}</p>
+                    `;
+                };
+                
+                img.onerror = function() {
+                    log(`이미지 로드 실패: ${imageUrl}`, 'error');
+                    showStatus('❌ 이미지 로드 실패', 'error');
+                };
+                
+                img.src = imageUrl;
+                
+            } catch (error) {
+                log(`이미지 로드 테스트 실패: ${error.message}`, 'error');
+                showStatus('❌ 이미지 로드 테스트 실패', 'error');
+            }
+        }
+
+        // 이미지 정보 표시
+        function displayImageInfo(imageInfo) {
+            const container = document.getElementById('image-container');
+            const imageUrl = `${API_BASE_URL}/uploads/${imageInfo.filename}`;
+            
+            container.innerHTML = `
+                <h3>📷 업로드 이미지 정보</h3>
+                <img src="${imageUrl}" alt="${imageInfo.originalName}" 
+                     onload="log('이미지 렌더링 성공', 'success')"
+                     onerror="log('이미지 렌더링 실패', 'error')">
+                <p><strong>원본 파일명:</strong> ${imageInfo.originalName}</p>
+                <p><strong>업로드 시간:</strong> ${imageInfo.uploadTime}</p>
+                <p><strong>파일 크기:</strong> ${(imageInfo.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+                <p><strong>MIME 타입:</strong> ${imageInfo.mimeType}</p>
+                <p><strong>QR 코드:</strong> ${imageInfo.qrCodes.length}개 발견</p>
+            `;
+        }
+
+        // 페이지 로드시 자동 테스트
+        window.addEventListener('load', () => {
+            log('View 페이지 디버그 테스트 로드됨', 'info');
+            log('자동으로 업로드 API 테스트를 실행합니다', 'info');
+            testUploadAPI();
+        });
+    </script>
+</body>
+</html>

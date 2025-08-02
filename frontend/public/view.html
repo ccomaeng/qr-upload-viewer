@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 뷰어 - QR Upload Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex: 1;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .image-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .image-container {
+            text-align: center;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-image {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #667eea;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-item strong {
+            color: #2c3e50;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+            color: #e74c3c;
+        }
+
+        .error h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            background: #219a52;
+            transform: translateY(-1px);
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-btn">
+                <span>←</span>
+                홈으로
+            </a>
+            <div class="title" id="page-title">이미지 로딩 중...</div>
+        </div>
+
+        <div class="content">
+            <div class="image-section">
+                <div class="image-container" id="image-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>이미지를 불러오고 있습니다...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="info-panel">
+                    <div class="info-title">
+                        📄 이미지 정보
+                    </div>
+                    <div id="image-info">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>정보를 불러오고 있습니다...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-panel" id="qr-panel" style="display: none;">
+                    <div class="info-title">
+                        📱 QR 코드 정보
+                    </div>
+                    <div id="qr-info"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL에서 uploadId 추출
+        function getUploadIdFromUrl() {
+            const path = window.location.pathname;
+            const match = path.match(/\/view\/([^\/]+)/);
+            return match ? match[1] : null;
+        }
+
+        // URL 파라미터에서 uploadId 추출 (fallback)
+        function getUploadIdFromParams() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id') || params.get('uploadId');
+        }
+
+        // 실제 uploadId 가져오기
+        function getUploadId() {
+            return getUploadIdFromUrl() || getUploadIdFromParams();
+        }
+
+        // API 기본 URL
+        const API_BASE_URL = 'http://192.168.25.54:3001';
+
+        // 오류 표시
+        function showError(message) {
+            const container = document.getElementById('image-container');
+            container.innerHTML = `
+                <div class="error">
+                    <h2>😞 오류 발생</h2>
+                    <p>${message}</p>
+                    <a href="/" class="back-btn" style="margin-top: 20px; display: inline-flex;">
+                        <span>←</span>
+                        홈으로 돌아가기
+                    </a>
+                </div>
+            `;
+        }
+
+        // 날짜 형식화
+        function formatDate(dateString) {
+            if (!dateString) return '알 수 없음';
+            return new Date(dateString).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // 파일 크기 형식화
+        function formatFileSize(bytes) {
+            if (!bytes) return '알 수 없음';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // 이미지 다운로드
+        function downloadImage(filename, originalName) {
+            const link = document.createElement('a');
+            link.href = `${API_BASE_URL}/uploads/${filename}`;
+            link.download = originalName || 'image';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 메인 로직
+        async function loadImageView() {
+            const uploadId = getUploadId();
+            
+            if (!uploadId) {
+                showError('업로드 ID가 제공되지 않았습니다.');
+                return;
+            }
+
+            try {
+                // 업로드 정보 가져오기
+                const uploadResponse = await fetch(`${API_BASE_URL}/api/uploads/${uploadId}`);
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('이미지를 찾을 수 없습니다.');
+                }
+                
+                const uploadData = await uploadResponse.json();
+                const imageInfo = uploadData.upload;
+                
+                // 페이지 제목 업데이트
+                document.getElementById('page-title').textContent = imageInfo.originalName || '업로드된 이미지';
+                document.title = `${imageInfo.originalName} - QR Upload Viewer`;
+                
+                // 이미지 표시
+                const imageUrl = `${API_BASE_URL}/uploads/${imageInfo.filename}`;
+                const imageContainer = document.getElementById('image-container');
+                
+                imageContainer.innerHTML = `
+                    <img 
+                        src="${imageUrl}" 
+                        alt="${imageInfo.originalName}"
+                        class="main-image"
+                        onload="console.log('이미지 로드 성공')"
+                        onerror="this.parentElement.innerHTML='<div class=\\"error\\"><h2>😞 이미지 로드 실패</h2><p>이미지를 불러올 수 없습니다.</p></div>'"
+                    >
+                `;
+                
+                // 이미지 정보 표시
+                const imageInfoElement = document.getElementById('image-info');
+                imageInfoElement.innerHTML = `
+                    <div class="info-item">
+                        <strong>파일명:</strong> ${imageInfo.originalName}
+                    </div>
+                    <div class="info-item">
+                        <strong>업로드 시간:</strong> ${formatDate(imageInfo.uploadTime)}
+                    </div>
+                    <div class="info-item">
+                        <strong>파일 크기:</strong> ${formatFileSize(imageInfo.fileSize)}
+                    </div>
+                    <div class="info-item">
+                        <strong>형식:</strong> ${imageInfo.mimeType}
+                    </div>
+                    <div class="info-item">
+                        <strong>처리 시간:</strong> ${imageInfo.processingTime}ms
+                    </div>
+                    <button class="download-btn" onclick="downloadImage('${imageInfo.filename}', '${imageInfo.originalName}')">
+                        <span>⬇️</span>
+                        이미지 다운로드
+                    </button>
+                `;
+                
+                // QR 코드 결과 가져오기
+                const resultsResponse = await fetch(`${API_BASE_URL}/api/results/${uploadId}`);
+                if (resultsResponse.ok) {
+                    const resultsData = await resultsResponse.json();
+                    if (resultsData.qrCodes && resultsData.qrCodes.length > 0) {
+                        const qrPanel = document.getElementById('qr-panel');
+                        const qrInfo = document.getElementById('qr-info');
+                        
+                        qrInfo.innerHTML = `
+                            <div class="info-item">
+                                <strong>발견된 QR 코드:</strong> ${resultsData.qrCodes.length}개
+                            </div>
+                            <div style="font-size: 0.9rem; color: #7f8c8d; margin-top: 10px;">
+                                이 이미지에서 ${resultsData.qrCodes.length}개의 QR 코드가 발견되었습니다.
+                            </div>
+                        `;
+                        
+                        qrPanel.style.display = 'block';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('로드 오류:', error);
+                showError(error.message || '이미지를 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 페이지 로드시 실행
+        window.addEventListener('load', loadImageView);
+    </script>
+</body>
+</html>

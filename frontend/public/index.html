@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="description" content="Advanced QR code image viewer and decoder. Upload images and instantly detect and decode QR codes with our secure, fast processing." />
+    <meta name="keywords" content="QR code, decoder, scanner, image upload, barcode, reader" />
+    <meta name="author" content="QR Viewer Pro" />
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="QR Viewer Pro - Advanced QR Code Image Decoder" />
+    <meta property="og:description" content="Upload images and instantly detect and decode QR codes with our secure, fast processing system." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Twitter Card meta tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QR Viewer Pro - Advanced QR Code Image Decoder" />
+    <meta name="twitter:description" content="Upload images and instantly detect and decode QR codes with our secure, fast processing system." />
+    
+    <!-- Apple Web App meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="QR Viewer Pro" />
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <title>QR Viewer Pro - Advanced QR Code Image Decoder</title>
+    
+    <!-- Structured data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "QR Viewer Pro",
+      "description": "Advanced QR code image viewer and decoder",
+      "url": "https://qr-viewer-pro.com",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "QR Code Detection",
+        "Image Upload",
+        "Secure Processing",
+        "Multiple Format Support",
+        "Real-time Processing"
+      ]
+    }
+    </script>
+    
+    <style>
+      /* Loading screen */
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      #loading.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-content {
+        text-align: center;
+        color: white;
+      }
+      
+      .loading-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      .loading-text {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      
+      .loading-subtext {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        font-size: 1rem;
+        opacity: 0.8;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+      
+      /* Hide loading when React app loads */
+      #root:not(:empty) ~ #loading {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>
+      <div style="text-align: center; padding: 2rem; font-family: Arial, sans-serif;">
+        <h1>🚫 JavaScript Required</h1>
+        <p>QR Viewer Pro requires JavaScript to function properly.</p>
+        <p>Please enable JavaScript in your browser and refresh the page.</p>
+      </div>
+    </noscript>
+    
+    <!-- React app root -->
+    <div id="root"></div>
+    
+    <!-- Loading screen (shown while React loads) -->
+    <div id="loading">
+      <div class="loading-content">
+        <div class="loading-icon">📱</div>
+        <div class="loading-text">QR Viewer Pro</div>
+        <div class="loading-subtext">Loading...</div>
+      </div>
+    </div>
+    
+    <script>
+      // Hide loading screen when page is fully loaded
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.classList.add('fade-out');
+            setTimeout(function() {
+              loading.style.display = 'none';
+            }, 500);
+          }
+        }, 500);
+      });
+      
+      // Service worker registration for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('%PUBLIC_URL%/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Upload 디버그 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #007AFF;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background: #f0f8ff;
+        }
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 QR Upload 디버그 테스트</h1>
+        <p><strong>API 서버:</strong> <span id="api-url">http://192.168.25.54:3001</span></p>
+        <p><strong>현재 시간:</strong> <span id="current-time"></span></p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <h3>📷 이미지 업로드</h3>
+            <p>클릭하거나 파일을 드래그해서 업로드하세요</p>
+        </div>
+
+        <div id="status-area"></div>
+
+        <div class="log">
+            <button class="clear-btn" onclick="clearLog()">Clear</button>
+            <div id="log-content"></div>
+        </div>
+
+        <h3>🔧 수동 테스트</h3>
+        <button onclick="testApiConnection()">API 연결 테스트</button>
+        <button onclick="testLatestUpload()">최신 업로드 결과 확인</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://192.168.25.54:3001';
+        
+        // 현재 시간 업데이트
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleString('ko-KR');
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 로그 함수
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logContent = document.getElementById('log-content');
+            const logLine = document.createElement('div');
+            
+            const typeIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            };
+            
+            logLine.innerHTML = `<span style="color: #888">[${timestamp}]</span> ${typeIcon[type] || 'ℹ️'} ${message}`;
+            logContent.appendChild(logLine);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-content').innerHTML = '';
+        }
+
+        function showStatus(message, type) {
+            const statusArea = document.getElementById('status-area');
+            statusArea.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        // API 연결 테스트
+        async function testApiConnection() {
+            log('API 연결 테스트 시작...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`API 연결 성공: ${JSON.stringify(data)}`, 'success');
+                    showStatus('✅ API 서버 연결 성공', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`API 연결 실패: ${error.message}`, 'error');
+                showStatus('❌ API 서버 연결 실패', 'error');
+            }
+        }
+
+        // 최신 업로드 결과 확인
+        async function testLatestUpload() {
+            const uploadId = '14160c7e-810b-49be-87cd-4d3c301caa8c'; // 최신 업로드 ID
+            log(`최신 업로드 결과 확인: ${uploadId}`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/results/${uploadId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`업로드 결과: ${JSON.stringify(data, null, 2)}`, 'success');
+                    showStatus('✅ 업로드 결과 조회 성공', 'success');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`업로드 결과 조회 실패: ${error.message}`, 'error');
+                showStatus('❌ 업로드 결과 조회 실패', 'error');
+            }
+        }
+
+        // 파일 업로드
+        async function uploadFile(file) {
+            log(`파일 업로드 시작: ${file.name} (${file.size} bytes)`, 'info');
+            showStatus('🔄 파일 업로드 중...', 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                log(`POST ${API_BASE_URL}/api/upload`, 'info');
+                
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`응답 상태: ${response.status} ${response.statusText}`, 'info');
+                log(`응답 헤더: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                log(`업로드 응답: ${JSON.stringify(data, null, 2)}`, 'success');
+                showStatus('✅ 업로드 성공! 결과 조회 중...', 'success');
+                
+                // 결과 폴링 시작
+                await pollResults(data.uploadId);
+                
+            } catch (error) {
+                log(`업로드 실패: ${error.message}`, 'error');
+                showStatus('❌ 업로드 실패', 'error');
+            }
+        }
+
+        // 결과 폴링
+        async function pollResults(uploadId, attempt = 1) {
+            log(`결과 폴링 시도 #${attempt}: ${uploadId}`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/results/${uploadId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`폴링 응답: ${JSON.stringify(data)}`, 'info');
+                
+                if (data.status === 'completed') {
+                    log(`처리 완료! QR 코드 ${data.qrCodes.length}개 발견`, 'success');
+                    showStatus(`✅ 처리 완료! QR 코드 ${data.qrCodes.length}개 발견`, 'success');
+                } else if (data.status === 'failed') {
+                    throw new Error(data.error || '처리 실패');
+                } else {
+                    log(`아직 처리 중... 1초 후 재시도`, 'warning');
+                    if (attempt < 30) { // 최대 30초
+                        setTimeout(() => pollResults(uploadId, attempt + 1), 1000);
+                    } else {
+                        throw new Error('폴링 타임아웃 (30초)');
+                    }
+                }
+            } catch (error) {
+                log(`폴링 실패: ${error.message}`, 'error');
+                showStatus('❌ 결과 조회 실패', 'error');
+            }
+        }
+
+        // 파일 선택 이벤트
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        });
+
+        // 드래그 앤 드롭
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '#e6f3ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.background = '';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.background = '';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                uploadFile(file);
+            } else {
+                log('이미지 파일만 업로드 가능합니다', 'error');
+                showStatus('❌ 이미지 파일만 업로드 가능', 'error');
+            }
+        });
+
+        // 페이지 로드시 API 연결 테스트
+        window.addEventListener('load', () => {
+            log('QR Upload 디버그 테스트 페이지 로드됨', 'info');
+            testApiConnection();
+        });
+    </script>
+</body>
+</html>
