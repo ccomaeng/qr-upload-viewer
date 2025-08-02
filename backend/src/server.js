@@ -21,13 +21,19 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+    ? [
+        'https://qr-upload-viewer.vercel.app',
+        'https://frontend-d2zd3v0v8-ccomaengs-projects.vercel.app',
+        'https://frontend-957pbyu0v-ccomaengs-projects.vercel.app',
+        'https://frontend-6sokcm7yh-ccomaengs-projects.vercel.app',
+        process.env.FRONTEND_URL || 'https://qr-upload-viewer.vercel.app'
+      ]
     : [
         'http://localhost:3000', 
         'http://127.0.0.1:3000', 
         'http://localhost:3002', 
         'http://127.0.0.1:3002',
-        'http://192.168.25.54:3000',  // IP 주소 추가
+        'http://192.168.25.54:3000',
         process.env.FRONTEND_URL || 'http://192.168.25.54:3000'
       ],
   credentials: true,
