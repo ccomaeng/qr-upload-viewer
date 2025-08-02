@@ -31,6 +31,10 @@ export const uploadImageSimple = async (file) => {
     
   } catch (error) {
     console.error('Upload error:', error);
+    // Sleep 모드 안내 메시지 추가
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('서버가 절전 모드에서 깨어나는 중입니다. 1-2분 후 다시 시도해주세요.');
+    }
     throw error;
   }
 };

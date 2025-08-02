@@ -172,7 +172,7 @@ const ACCEPTED_FILE_TYPES = {
   'image/webp': ['.webp']
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 function UploadZone({ onFileUpload, disabled }) {
   const [uploadError, setUploadError] = useState(null);
@@ -313,7 +313,7 @@ function UploadZone({ onFileUpload, disabled }) {
             JPEG, PNG, GIF, WebP
           </FileInfoItem>
           <FileInfoItem>
-            📏 Max 10MB
+            📏 Max 20MB
           </FileInfoItem>
           <FileInfoItem>
             🔍 Auto QR Detection

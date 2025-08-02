@@ -73,8 +73,8 @@ export const uploadImage = async (file) => {
       throw new Error('No file provided');
     }
 
-    // Check file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024;
+    // Check file size (20MB limit)
+    const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new Error(`File too large. Maximum size is ${Math.floor(maxSize / 1024 / 1024)}MB`);
     }
