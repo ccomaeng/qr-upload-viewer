@@ -1,5 +1,5 @@
 // Simple API test without axios complications
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.25.54:3001';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://qr-upload-viewer-backend.onrender.com';
 
 export const uploadImageSimple = async (file) => {
   try {
@@ -12,6 +12,7 @@ export const uploadImageSimple = async (file) => {
     const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       body: formData,
+      mode: 'cors',
       // Don't set Content-Type header - let browser handle it
     });
     
@@ -38,7 +39,9 @@ export const getResultsSimple = async (uploadId) => {
   try {
     console.log('Getting results for:', uploadId);
     
-    const response = await fetch(`${API_BASE_URL}/api/results/${uploadId}`);
+    const response = await fetch(`${API_BASE_URL}/api/results/${uploadId}`, {
+      mode: 'cors'
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to get results: ${response.status}`);
@@ -60,6 +63,7 @@ export const generateQRCode = async (uploadId) => {
     
     const response = await fetch(`${API_BASE_URL}/api/generate-qr/${uploadId}`, {
       method: 'POST',
+      mode: 'cors'
     });
     
     console.log('QR Generation response status:', response.status);
@@ -84,7 +88,9 @@ export const getQRCode = async (uploadId) => {
   try {
     console.log('📱 Getting QR code for:', uploadId);
     
-    const response = await fetch(`${API_BASE_URL}/api/qr/${uploadId}`);
+    const response = await fetch(`${API_BASE_URL}/api/qr/${uploadId}`, {
+      mode: 'cors'
+    });
     
     if (!response.ok) {
       if (response.status === 404) {
