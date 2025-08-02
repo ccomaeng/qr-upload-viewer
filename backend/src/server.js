@@ -24,12 +24,14 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
+    console.log(`🌐 CORS 요청 origin: ${origin}`);
+    console.log(`🔧 NODE_ENV: ${process.env.NODE_ENV}`);
+    
     const allowedOrigins = process.env.NODE_ENV === 'production' 
       ? [
           'https://qr-upload-viewer.vercel.app',
-          // Allow all Vercel deployment URLs
-          /^https:\/\/frontend-[a-z0-9]+-ccomaengs-projects\.vercel\.app$/,
-          /^https:\/\/qr-upload-viewer-[a-z0-9]+\.vercel\.app$/,
+          // More flexible Vercel patterns - allow all vercel.app subdomains temporarily
+          /^https:\/\/.*\.vercel\.app$/,
           process.env.FRONTEND_URL || 'https://qr-upload-viewer.vercel.app'
         ]
       : [
@@ -44,17 +46,23 @@ app.use(cors({
     // Check if origin matches any allowed pattern
     const isAllowed = allowedOrigins.some(allowed => {
       if (typeof allowed === 'string') {
-        return origin === allowed;
+        const match = origin === allowed;
+        console.log(`🔍 String match "${allowed}": ${match}`);
+        return match;
       } else if (allowed instanceof RegExp) {
-        return allowed.test(origin);
+        const match = allowed.test(origin);
+        console.log(`🔍 Regex match "${allowed}": ${match}`);
+        return match;
       }
       return false;
     });
 
     if (isAllowed) {
+      console.log(`✅ CORS 허용: ${origin}`);
       callback(null, true);
     } else {
-      console.warn(`⚠️ CORS blocked origin: ${origin}`);
+      console.warn(`⚠️ CORS 차단: ${origin}`);
+      console.warn(`허용된 origins:`, allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
