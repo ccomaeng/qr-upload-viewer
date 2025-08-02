@@ -11,7 +11,7 @@ const { initDatabase } = require('./database/init');
 const { errorHandler, notFound } = require('./middleware/errorHandlers');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
 
 // Security middleware
 app.use(helmet({
