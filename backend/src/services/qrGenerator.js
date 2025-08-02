@@ -21,10 +21,10 @@ async function generateQRForUpload(uploadData) {
     const qrContent = {
       type: "image_upload",
       uploadId,
-      imageUrl: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/uploads/${filename}`,
+      imageUrl: `https://qr-upload-viewer-backend.onrender.com/uploads/${filename}`,
       originalName,
       uploadTime,
-      viewUrl: `${process.env.FRONTEND_URL || 'http://192.168.25.54:3000'}/view.html?id=${uploadId}`,
+      viewUrl: `https://qr-upload-viewer.vercel.app/view.html?id=${uploadId}`,
       generatedAt: new Date().toISOString()
     };
     
