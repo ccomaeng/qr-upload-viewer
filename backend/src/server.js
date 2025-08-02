@@ -18,26 +18,49 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// CORS configuration with enhanced Vercel domain support
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://qr-upload-viewer.vercel.app',
-        'https://frontend-d2zd3v0v8-ccomaengs-projects.vercel.app',
-        'https://frontend-957pbyu0v-ccomaengs-projects.vercel.app',
-        'https://frontend-6sokcm7yh-ccomaengs-projects.vercel.app',
-        process.env.FRONTEND_URL || 'https://qr-upload-viewer.vercel.app'
-      ]
-    : [
-        'http://localhost:3000', 
-        'http://127.0.0.1:3000', 
-        'http://localhost:3002', 
-        'http://127.0.0.1:3002',
-        'http://192.168.25.54:3000',
-        process.env.FRONTEND_URL || 'http://192.168.25.54:3000'
-      ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+      ? [
+          'https://qr-upload-viewer.vercel.app',
+          // Allow all Vercel deployment URLs
+          /^https:\/\/frontend-[a-z0-9]+-ccomaengs-projects\.vercel\.app$/,
+          /^https:\/\/qr-upload-viewer-[a-z0-9]+\.vercel\.app$/,
+          process.env.FRONTEND_URL || 'https://qr-upload-viewer.vercel.app'
+        ]
+      : [
+          'http://localhost:3000', 
+          'http://127.0.0.1:3000', 
+          'http://localhost:3002', 
+          'http://127.0.0.1:3002',
+          'http://192.168.25.54:3000',
+          process.env.FRONTEND_URL || 'http://192.168.25.54:3000'
+        ];
+
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // Preflight cache for 24 hours
 }));
 
 // Rate limiting
