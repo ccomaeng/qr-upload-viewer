@@ -28,8 +28,8 @@ async function generateQRForUpload(uploadData) {
       generatedAt: new Date().toISOString()
     };
     
-    // Convert to JSON string
-    const qrText = JSON.stringify(qrContent);
+    // Use simple URL for better mobile compatibility
+    const qrText = qrContent.viewUrl;
     
     // Generate QR code image
     const qrImagePath = await generateQRCodeImage(qrText, uploadId);
