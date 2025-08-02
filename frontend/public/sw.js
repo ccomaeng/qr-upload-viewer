@@ -55,6 +55,11 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   const url = event.request.url;
   
+  // Skip unsupported schemes (chrome-extension, file, etc.)
+  if (!isHttpScheme(url)) {
+    return;
+  }
+  
   // Skip caching for API requests
   if (isApiRequest(url)) {
     event.respondWith(handleApiRequest(event.request));
@@ -73,12 +78,15 @@ self.addEventListener('fetch', function(event) {
         console.log('[SW] Fetching from network:', url);
         return fetch(event.request)
           .then(function(response) {
-            // Only cache successful responses
-            if (response.status === 200) {
+            // Only cache successful responses from supported schemes
+            if (response.status === 200 && isHttpScheme(event.request.url)) {
               const responseClone = response.clone();
               caches.open(CACHE_NAME)
                 .then(function(cache) {
                   cache.put(event.request, responseClone);
+                })
+                .catch(function(cacheError) {
+                  console.warn('[SW] Cache put failed:', cacheError);
                 });
             }
             return response;
@@ -131,6 +139,11 @@ function handleApiRequest(request) {
 // Check if request is for API
 function isApiRequest(url) {
   return API_URLS.some(apiUrl => url.includes(apiUrl));
+}
+
+// Check if URL uses supported HTTP scheme
+function isHttpScheme(url) {
+  return url.startsWith('http://') || url.startsWith('https://');
 }
 
 // Message handler for cache management

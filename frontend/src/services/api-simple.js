@@ -15,8 +15,19 @@ const retryFetch = async (url, options, maxRetries = 3) => {
         return response;
       }
       
-      // If it's a server error (5xx) or CORS error, retry
-      if (response.status >= 500 || !response.ok) {
+      // Handle rate limiting (429) with longer wait
+      if (response.status === 429) {
+        console.warn(`⚠️ Rate limit 도달 (${response.status}), 대기 중... (${attempt}/${maxRetries})`);
+        if (attempt === maxRetries) {
+          return response; // Return the failed response on last attempt
+        }
+        // Wait longer for rate limiting (5s, 10s, 15s)
+        await sleep(attempt * 5000);
+        continue;
+      }
+      
+      // If it's a server error (5xx), retry
+      if (response.status >= 500) {
         console.warn(`⚠️ 서버 오류 ${response.status}, 재시도 중... (${attempt}/${maxRetries})`);
         if (attempt === maxRetries) {
           return response; // Return the failed response on last attempt
@@ -64,6 +75,11 @@ export const uploadImageSimple = async (file) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Upload failed:', errorText);
+      
+      if (response.status === 429) {
+        throw new Error('RATE_LIMIT_EXCEEDED');
+      }
+      
       throw new Error(`Upload failed: ${response.status} ${errorText}`);
     }
     
